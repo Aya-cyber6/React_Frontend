@@ -27,7 +27,6 @@ export const logout = () => {
 };
 
 export const getUserInfo = () => {
-  debugger;
   const token = getToken();
   if (!token) return null;
   try {

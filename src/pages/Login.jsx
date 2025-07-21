@@ -1,67 +1,122 @@
-import { useState } from "react";
-import { Button, Form, Input, message } from "antd";
-import axios from "axios";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button, Form, Input, message, Card } from "antd";
+import axios from "axios";
 
-function Login() {
+// Constants
+const API_URL = "https://localhost:7157/api/auth/login";
+const HOME_ROUTE = "/students";
+const TOKEN_KEY = "token";
+
+const Login = () => {
+  // State management
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (values) => {
+  // Effects
+  useEffect(() => {
+    checkExistingSession();
+  }, []);
+
+  // Helper functions
+  const checkExistingSession = () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      navigate(HOME_ROUTE);
+    }
+  };
+
+  const handleLoginSuccess = (token) => {
+    localStorage.setItem(TOKEN_KEY, token);
+    navigate(HOME_ROUTE);
+  };
+
+  const handleLoginError = (error) => {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Login failed. Please try again.";
+    message.error(errorMessage);
+  };
+
+  // Event handlers
+  const handleSubmit = async (values) => {
     try {
       setLoading(true);
-      console.log(values);
-      const response = await axios.post(
-        "https://localhost:7157/api/auth/login",
-        values
-      );
-      localStorage.setItem("token", response.data.result);
-      navigate("/students");
-
-      console.log("Login successful:", response.data);
+      const response = await axios.post(API_URL, values);
+      handleLoginSuccess(response.data.result);
     } catch (error) {
-      message.error("Login failed:", error);
+      handleLoginError(error);
     } finally {
       setLoading(false);
     }
   };
 
+  // Form layout
   return (
-    <Form
-      name="Login"
-      onFinish={handleLogin}
-      layout="vertical"
-      style={{ maxWidth: 400, margin: "auto", marginTop: 100 }}
+    <Card
+      title="Login"
+      style={{
+        maxWidth: 450,
+        margin: "auto",
+        marginTop: 100,
+        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+      }}
     >
-      <Form.Item
-        name="email"
-        label="Email"
-        rules={[{ required: true, message: "Please input your username!" }]}
+      <Form
+        name="loginForm"
+        onFinish={handleSubmit}
+        layout="vertical"
+        autoComplete="off"
       >
-        <Input placeholder="Enter your username" />
-      </Form.Item>
-
-      <Form.Item
-        name="password"
-        label="Password"
-        rules={[{ required: true, message: "Please input your password!" }]}
-      >
-        <Input.Password placeholder="Enter your password" />
-      </Form.Item>
-
-      <Form.Item>
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          style={{ width: "100%" }}
-          block
+        <Form.Item
+          name="email"
+          label="Email"
+          rules={[
+            {
+              required: true,
+              message: "Please input your email!",
+            },
+            {
+              type: "email",
+              message: "Please enter a valid email address!",
+            },
+          ]}
         >
-          Login
-        </Button>
-      </Form.Item>
-    </Form>
+          <Input placeholder="Enter your email" />
+        </Form.Item>
+
+        <Form.Item
+          name="password"
+          label="Password"
+          rules={[
+            {
+              required: true,
+              message: "Please input your password!",
+            },
+            {
+              min: 6,
+              message: "Password must be at least 6 characters!",
+            },
+          ]}
+        >
+          <Input.Password placeholder="Enter your password" />
+        </Form.Item>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            block
+            size="large"
+          >
+            Sign In
+          </Button>
+        </Form.Item>
+      </Form>
+    </Card>
   );
-}
+};
 
 export default Login;
